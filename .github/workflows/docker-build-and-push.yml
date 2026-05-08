@@ -94,6 +94,9 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout code
