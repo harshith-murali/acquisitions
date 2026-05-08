@@ -273,3 +273,5 @@ See [DOCKER_SETUP.md#troubleshooting](DOCKER_SETUP.md#troubleshooting) for more 
 ---
 
 **Built for DevOps** | **Tested with Docker v29.4+** | **Neon-Ready**
+
+**BY Harshith M
