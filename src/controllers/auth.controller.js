@@ -1,38 +1,52 @@
 import logger from '#configs/logger.js';
 import { signupSchema, signinSchema } from '#validators/auth.validator.js';
 import { formatValidationErrorResponse } from '#utils/format.js';
-import {createUser} from '#services/auth.service.js';
-import {jwtToken} from '#utils/jwt.js';
+import { createUser, authenticateUser } from '#services/auth.service.js';
+import { jwtToken } from '#utils/jwt.js';
 import { cookies } from '#utils/cookies.js';
+
+const getSafeUserPayload = user => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  role: user.role,
+});
+
 export const signup = async (req, res, next) => {
   try {
     const validationResult = signupSchema.safeParse(req.body);
 
     if (!validationResult.success) {
-      logger.warn('Validation failed for signup request: %o', validationResult.error);
+      logger.warn(
+        'Validation failed for signup request: %o',
+        validationResult.error
+      );
       const errorResponse = formatValidationErrorResponse(validationResult.error);
       return res.status(400).json(errorResponse);
     }
 
     const { email, password, name, role } = validationResult.data;
-
     const user = await createUser({ email, password, name, role });
 
-    const token = jwtToken.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwtToken.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
-    cookies.set(res, "token" , token)
+    cookies.set(res, 'token', token);
 
     logger.info('User signed up successfully: %s', email);
 
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: { id: user.id, email: user.email, name: user.name, role: user.role },
+      data: getSafeUserPayload(user),
     });
   } catch (err) {
     logger.error('Error in signup controller: %o', err);
 
-    if (err.message === 'User with this email already exists') {
+    if (err.message === 'User already exists') {
       return res.status(409).json({ success: false, message: err.message });
     }
 
@@ -45,21 +59,31 @@ export const signin = async (req, res, next) => {
     const validationResult = signinSchema.safeParse(req.body);
 
     if (!validationResult.success) {
-      logger.warn('Validation failed for signin request: %o', validationResult.error);
+      logger.warn(
+        'Validation failed for signin request: %o',
+        validationResult.error
+      );
       const errorResponse = formatValidationErrorResponse(validationResult.error);
       return res.status(400).json(errorResponse);
     }
 
     const { email, password } = validationResult.data;
+    const user = await authenticateUser({ email, password });
 
-    const { user, token } = await authService.signin({ email, password });
+    const token = jwtToken.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    cookies.set(res, 'token', token);
 
     logger.info('User signed in successfully: %s', email);
 
     return res.status(200).json({
       success: true,
       message: 'User signed in successfully',
-      data: { id: user.id, email: user.email, name: user.name, role: user.role, token },
+      data: getSafeUserPayload(user),
     });
   } catch (err) {
     logger.error('Error in signin controller: %o', err);
@@ -76,21 +100,25 @@ export const signin = async (req, res, next) => {
   }
 };
 
-export const logout = async (req, res, next) => {
+export const signout = async (req, res, next) => {
   try {
-    const userId = req.user?.id;
+    const token = cookies.get(req, 'token');
 
-    if (!userId) {
+    if (!token) {
+      logger.warn('Unauthorized signout attempt');
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    await authService.logout(userId);
+    cookies.clear(res, 'token');
+    logger.info('User signed out successfully');
 
-    logger.info('User logged out successfully: %s', userId);
-
-    return res.status(200).json({ success: true, message: 'User logged out successfully' });
+    return res
+      .status(200)
+      .json({ success: true, message: 'User signed out successfully' });
   } catch (err) {
-    logger.error('Error in logout controller: %o', err);
+    logger.error('Error in signout controller: %o', err);
     next(err);
   }
 };
+
+export const logout = signout;

@@ -9,7 +9,44 @@ export const hashPassword = async password => {
     return await bcrypt.hash(password, 10);
   } catch (err) {
     logger.error('Error hashing password: %o', err);
-    throw new Error('Error hashing password');
+    throw new Error('Error hashing password', { cause: err });
+  }
+};
+
+export const comparePassword = async (password, hashedPassword) => {
+  try {
+    return await bcrypt.compare(password, hashedPassword);
+  } catch (err) {
+    logger.error('Error comparing password: %o', err);
+    throw new Error('Error comparing password', { cause: err });
+  }
+};
+
+export const authenticateUser = async ({ email, password }) => {
+  try {
+    const existingUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (existingUser.length === 0) {
+      logger.warn('User not found: %s', email);
+      throw new Error('User not found');
+    }
+
+    const user = existingUser[0];
+    const isPasswordValid = await comparePassword(password, user.password);
+
+    if (!isPasswordValid) {
+      logger.warn('Invalid credentials for user: %s', email);
+      throw new Error('Invalid credentials');
+    }
+
+    return user;
+  } catch (err) {
+    logger.error('Error authenticating user: %o', err);
+    throw err;
   }
 };
 
@@ -42,7 +79,7 @@ export const createUser = async ({
         role,
       })
       .returning();
-      logger.info('User created successfully: %s', email);
+    logger.info('User created successfully: %s', email);
     return newUser[0];
   } catch (err) {
     logger.error('Error creating user: %o', err);
