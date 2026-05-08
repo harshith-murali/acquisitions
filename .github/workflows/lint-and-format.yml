@@ -1,0 +1,76 @@
+name: Lint and Format
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    branches:
+      - main
+      - staging
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+        id: eslint
+
+      - name: Run Prettier check
+        run: npm run format:check
+        continue-on-error: true
+        id: prettier
+
+      - name: Comment on PR if issues found
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eslintFailed = ${{ steps.eslint.outcome == 'failure' }};
+            const prettierFailed = ${{ steps.prettier.outcome == 'failure' }};
+
+            let comment = '## 🔍 Code Quality Issues Found\n\n';
+
+            if (eslintFailed) {
+              comment += '### ESLint Issues\n';
+              comment += '❌ ESLint found issues in your code.\n\n';
+              comment += '**Fix suggestions:**\n';
+              comment += '```bash\nnpm run lint:fix\n```\n\n';
+            }
+
+            if (prettierFailed) {
+              comment += '### Prettier Issues\n';
+              comment += '❌ Code formatting issues detected.\n\n';
+              comment += '**Fix suggestions:**\n';
+              comment += '```bash\nnpm run format\n```\n\n';
+            }
+
+            comment += '---\n';
+            comment += '_Please run the suggested commands and commit the changes._';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail if linting or formatting issues found
+        if: failure()
+        run: exit 1

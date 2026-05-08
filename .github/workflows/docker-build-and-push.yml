@@ -1,0 +1,156 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate build summary
+        if: always()
+        run: |
+          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ref**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "✅ Image will be pushed to registry" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Image build validated (not pushed on PR)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Annotate build success
+        if: success()
+        run: |
+          echo "✅ Docker image built successfully"
+
+      - name: Annotate build failure
+        if: failure()
+        run: |
+          echo "❌ Docker build failed"
+          exit 1
+
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy'
+
+      - name: Comment scan results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const trivy = JSON.parse(fs.readFileSync('trivy-results.sarif', 'utf8'));
+
+            let vulnCount = 0;
+            let vulnLevels = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+
+            if (trivy.runs && trivy.runs[0] && trivy.runs[0].results) {
+              vulnCount = trivy.runs[0].results.length;
+              trivy.runs[0].results.forEach(result => {
+                const level = result.level || 'unknown';
+                if (vulnLevels[level] !== undefined) {
+                  vulnLevels[level]++;
+                }
+              });
+            }
+
+            let comment = '## 🔐 Security Scan Results\n\n';
+            if (vulnCount === 0) {
+              comment += '✅ No vulnerabilities found!\n';
+            } else {
+              comment += `⚠️ Found **${vulnCount}** vulnerabilities:\n\n`;
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += `| CRITICAL | ${vulnLevels.CRITICAL} |\n`;
+              comment += `| HIGH | ${vulnLevels.HIGH} |\n`;
+              comment += `| MEDIUM | ${vulnLevels.MEDIUM} |\n`;
+              comment += `| LOW | ${vulnLevels.LOW} |\n`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

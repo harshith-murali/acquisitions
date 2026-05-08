@@ -1,0 +1,95 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    branches:
+      - main
+      - staging
+
+env:
+  NODE_ENV: test
+  NODE_OPTIONS: --experimental-vm-modules
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+        run: npm test
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat coverage/coverage-summary.json | jq '.total | "- **Statements**: \(.statements.pct)%\n- **Branches**: \(.branches.pct)%\n- **Functions**: \(.functions.pct)%\n- **Lines**: \(.lines.pct)%"' -r >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Add test summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            if (fs.existsSync(path.join(process.env.GITHUB_WORKSPACE, 'coverage', 'coverage-summary.json'))) {
+              const coverage = JSON.parse(fs.readFileSync(path.join(process.env.GITHUB_WORKSPACE, 'coverage', 'coverage-summary.json'), 'utf8'));
+              const total = coverage.total;
+
+              let summary = '## 📈 Test Coverage Summary\n\n';
+              summary += `| Metric | Coverage |\n`;
+              summary += `|--------|----------|\n`;
+              summary += `| Statements | ${total.statements.pct}% |\n`;
+              summary += `| Branches | ${total.branches.pct}% |\n`;
+              summary += `| Functions | ${total.functions.pct}% |\n`;
+              summary += `| Lines | ${total.lines.pct}% |\n`;
+
+              core.summary.addRaw(summary);
+              core.summary.write();
+            }

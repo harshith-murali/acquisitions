@@ -37,16 +37,20 @@ const securityMiddleware = async (req, res, next) => {
       if (decision.reason.isBot()) {
         logger.warn('Bot detected: %s', req.ip);
 
-        return res.status(403).json({
-          success: false,
-          message: 'Bot access denied',
-        });
+        if (process.env.NODE_ENV !== 'development') {
+          return res.status(403).json({
+            success: false,
+            message: 'Bot access denied',
+          });
+        }
       }
 
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied',
-      });
+      if (process.env.NODE_ENV !== 'development') {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied',
+        });
+      }
     }
 
     next();

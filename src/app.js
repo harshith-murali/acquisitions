@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from '#routes/auth.routes.js';
-import { timestamp } from 'drizzle-orm/gel-core';
+import userRoutes from '#routes/user.routes.js';
 import securityMiddleware from '#middlewares/security.middleware.js';
 const app = express();
 app.use(helmet()); // middleware for security headers
@@ -36,5 +36,17 @@ app.get("/api" , (req,res) => {
 });
 
 app.use("/api/auth" , authRoutes); // Authentication routes
+app.use("/api/users" , userRoutes); // User CRUD routes
+
+app.use((req, res) => {
+  logger.warn('404 Not Found: %s %s', req.method, req.originalUrl);
+  res.status(404).json({ success: false, message: 'Endpoint not found' });
+});
+
+app.use((err, req, res, next) => {
+  logger.error('Internal Server Error: %o', err);
+  res.status(500).json({ success: false, message: 'Internal Server Error' });
+});
+
 
 export default app;
