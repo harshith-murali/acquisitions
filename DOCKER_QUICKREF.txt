@@ -1,0 +1,333 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    ACQUISITIONS API DOCKER QUICK REFERENCE                  ║
+║                         (Print this and keep handy!)                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🚀 QUICK START (2 MINUTES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DEVELOPMENT:
+    $ ./setup-docker.sh dev        # Automated setup
+    $ make dev-start               # Start (or: docker compose -f docker-compose.dev.yml up --build)
+    $ curl http://localhost:3000/health
+    $ make dev-stop                # Stop
+
+  PRODUCTION:
+    $ ./setup-docker.sh prod       # Automated setup
+    $ make prod-start              # Start (or: docker compose -f docker-compose.prod.yml up -d)
+    $ curl http://localhost:3000/health
+    $ make prod-stop               # Stop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🔧 COMMON COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SETUP & START:
+    ./setup-docker.sh              Interactive setup wizard
+    ./setup-docker.sh dev          Setup development only
+    ./setup-docker.sh prod         Setup production only
+    ./setup-docker.sh all          Setup both dev and prod
+    ./setup-docker.sh status       Show current setup status
+    ./setup-docker.sh help         Show help
+
+  DEVELOPMENT:
+    make dev-start                 Start (app + Neon Local)
+    make dev-stop                  Stop
+    make dev-logs                  View logs in real-time
+    make dev-shell                 Open shell in container
+    make dev-clean                 Remove containers & volumes
+
+  DATABASE:
+    make db-migrate                Run migrations
+    make db-generate               Generate schema from DB
+    make db-studio                 Open Drizzle Studio (http://localhost:3001)
+
+  CODE QUALITY:
+    make lint                      Run ESLint
+    make lint-fix                  Fix linting errors
+    make format                    Format code with Prettier
+    make format-check              Check if code is formatted
+
+  MONITORING:
+    make health-check              Check API health
+    make status                    Show container status
+    make docker-ps                 List running containers
+    make docker-images             List Docker images
+    make info                      Show project info
+
+  CLEANUP:
+    make dev-stop                  Stop development
+    make prod-stop                 Stop production
+    make docker-clean              Remove unused resources
+    make clean                     Remove everything (dangerous!)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Main README:
+    README.md                      Start here for overview
+
+  Quick Start:
+    QUICK_START.md                 5-minute quick reference
+    QUICK_START.md                 $ make docs-quick
+
+  Full Guide:
+    DOCKER_SETUP.md                Complete setup guide (5,500+ words)
+                                   $ make docs
+
+  Implementation:
+    DOCKER_IMPLEMENTATION_SUMMARY.md What was built, features checklist
+    DOCKER_IMPLEMENTATION_SUMMARY.md $ less DOCKER_IMPLEMENTATION_SUMMARY.md
+
+  Commands:
+    Makefile                       All available commands
+                                   $ make help
+
+  This File:
+    DOCKER_QUICKREF.txt            This quick reference (you're reading it!)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ⚙️  ENVIRONMENT FILES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DEVELOPMENT:
+    .env.development               Your local dev config (git-ignored)
+                                   Create: cp .env.development.example .env.development
+
+    .env.development.example       Template (commit to git)
+                                   Edit this to change defaults
+
+  PRODUCTION:
+    .env.production                Your local prod config (git-ignored)
+                                   Create: cp .env.production.example .env.production
+
+    .env.production.example        Template (commit to git)
+                                   Edit this to change defaults
+
+  KEY VARIABLES:
+    Development:
+      PORT=3000
+      DATABASE_URL=postgres://neon:npg@neon-local:5432/neondb
+      NEON_LOCAL=true
+      NEON_API_KEY=xxx
+      NEON_PROJECT_ID=xxx
+
+    Production:
+      PORT=3000
+      DATABASE_URL=postgres://user:pass@ep-xxx.neon.tech/dbname?sslmode=require
+      NEON_LOCAL=false
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🆘 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PROBLEM: "Connection refused" / Database can't connect
+    $ make status                  Check if Neon Local is running
+    $ make dev-logs                View logs to see errors
+    Fix:                           Wait 30-40 seconds, check status
+                                   or: make dev-stop && make dev-start
+
+  PROBLEM: "Port 3000 already in use"
+    $ lsof -ti:3000 | xargs kill -9   Kill the process
+    OR:
+    $ PORT=3001 make dev-start     Use a different port
+
+  PROBLEM: ".env.development not found"
+    $ cp .env.development.example .env.development
+    Then:
+    $ ./setup-docker.sh dev
+
+  PROBLEM: "Database/schema missing"
+    $ make db-migrate              Run migrations
+    OR:
+    $ make db-generate             Generate schema from existing DB
+
+  PROBLEM: "Docker not found"
+    → Install Docker Desktop: https://www.docker.com/products/docker-desktop
+    → Verify: docker --version
+
+  For more help:
+    → See DOCKER_SETUP.md#troubleshooting (70+ solutions!)
+    → Run: make help
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🎯 DEVELOPMENT WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FIRST TIME:
+    1. ./setup-docker.sh dev       Setup development environment
+    2. make dev-start              Start containers
+    3. make db-migrate             Setup database schema
+    4. curl http://localhost:3000/health  Verify it's working
+
+  DAILY DEVELOPMENT:
+    1. make dev-logs               Monitor logs in terminal 1
+    2. (In terminal 2) Edit src/   Make code changes
+    3. Nodemon auto-reloads app    (no restart needed!)
+    4. make lint-fix               Fix linting issues before commit
+    5. make format                 Format code
+    6. make dev-stop               Stop when done
+
+  DATABASE CHANGES:
+    1. Make schema changes in your ORM
+    2. make db-generate            Generate migration
+    3. make db-migrate             Apply migration
+    4. make db-studio              (optional) View in Drizzle Studio
+
+  TESTING:
+    1. make dev-shell              Open container shell
+    2. (Inside container) npm test Run your tests
+    3. exit                        Exit shell
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🚀 DEPLOYMENT WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FIRST TIME:
+    1. Get Neon Cloud URL from https://console.neon.tech
+    2. ./setup-docker.sh prod      Setup production environment
+    3. Paste URL into .env.production
+    4. make prod-start             Start production
+    5. curl http://localhost:3000/health  Verify it's working
+
+  ROUTINE DEPLOYMENTS:
+    1. make prod-stop              Stop old version
+    2. (Update code)
+    3. docker compose -f docker-compose.prod.yml build  Build new image
+    4. make prod-start             Start new version
+    5. make health-check           Verify health
+
+  MONITORING:
+    1. make prod-logs              View logs
+    2. make health-check           Check API status
+    3. docker stats acquisitions-app-prod  View resource usage
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 📁 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Docker:
+    Dockerfile                     Multi-stage build (dev & prod)
+    docker-compose.dev.yml         Development (app + Neon Local)
+    docker-compose.prod.yml        Production (app only)
+    .dockerignore                  Build context filter
+
+  Configuration:
+    .env.development               Dev secrets (git-ignored)
+    .env.development.example       Dev template
+    .env.production                Prod secrets (git-ignored)
+    .env.production.example        Prod template
+
+  Scripts:
+    setup-docker.sh                One-command setup wizard
+    docker-dev.sh                  Development helper
+    Makefile                       Command shortcuts
+
+  Documentation:
+    README.md                      Start here
+    QUICK_START.md                 5-minute guide
+    DOCKER_SETUP.md                Complete guide (5,500+ words)
+    DOCKER_IMPLEMENTATION_SUMMARY.md What was built
+    DOCKER_QUICKREF.txt            This file
+
+  Application:
+    package.json
+    index.js
+    src/app.js
+    src/server.js
+    src/configs/db.js              (auto-detects Neon Local)
+    drizzle.config.js
+    ...rest of app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🎓 LEARNING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DOCKER CONCEPTS:
+    Dockerfile                     Image definition
+    docker-compose.yml             Multi-container orchestration
+    Images                         Executable blueprints
+    Containers                     Running instances
+    Volumes                        Persistent data
+    Networks                       Inter-container communication
+
+  NEON CONCEPTS:
+    Neon Local                     PostgreSQL proxy for local development
+    Neon Cloud                     Managed PostgreSQL in the cloud
+    Ephemeral branches             Temporary DB branches (auto-delete)
+    Connection strings             How to connect to database
+
+  USEFUL LINKS:
+    Docker Docs:                   https://docs.docker.com/
+    Docker Compose:                https://docs.docker.com/compose/
+    Neon Docs:                     https://neon.tech/docs
+    Neon Local:                    https://neon.tech/docs/local/neon-local
+    Node.js Docker:                https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ✨ TIPS & TRICKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DEVELOPMENT TIPS:
+    • Make a terminal alias: alias dev='make dev-start'
+    • Use 'make dev-logs' in one tab, edit code in another
+    • Changes auto-reload with nodemon (wait ~2 seconds)
+    • Use 'make dev-shell' to debug inside container
+    • Keep QUICK_START.md handy as a cheat sheet
+
+  PRODUCTION TIPS:
+    • Never commit .env.production to git
+    • Use environment secrets in CI/CD instead
+    • Monitor with 'make prod-logs' and 'docker stats'
+    • Use 'make health-check' to verify deployment
+    • Set up log rotation (configured in docker-compose.prod.yml)
+
+  TEAM TIPS:
+    • Everyone uses the same docker-compose files
+    • .env.development.example is committed (for reference)
+    • Each developer has their own .env.development (git-ignored)
+    • New team members just run: ./setup-docker.sh dev
+    • Run 'make help' to discover available commands
+
+  PERFORMANCE TIPS:
+    • Dev builds take ~2-3 minutes first time, seconds after
+    • Prod builds are optimized (smaller images)
+    • Use 'make docker-clean' periodically to free space
+    • Docker Desktop memory/CPU settings can be increased
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 🔗 QUICK LINKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  In this project:
+    make help                      Show all available commands
+    make docs                      Read DOCKER_SETUP.md
+    make docs-quick                Read QUICK_START.md
+    ./setup-docker.sh --help       Show setup script help
+
+  External:
+    Neon Console:                  https://console.neon.tech
+    Neon Docs:                     https://neon.tech/docs
+    Docker Desktop:                https://www.docker.com/products/docker-desktop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 📝 REMEMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ Development uses Neon Local (in Docker, ephemeral)
+  ✓ Production uses Neon Cloud (in the cloud, persistent)
+  ✓ Same codebase, different configs (via .env files)
+  ✓ Database connection is automatic (via src/configs/db.js)
+  ✓ Hot-reload works in development (nodemon + volume mounts)
+  ✓ Everything is containerized (dev & prod)
+  ✓ Secrets are never committed (git-ignored .env files)
+  ✓ Setup is fully automated (./setup-docker.sh or make help)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Last Updated: May 8, 2025
+Ready for: Docker 29.4+, Docker Compose 5.1+, Neon DB
+
+═══════════════════════════════════════════════════════════════════════════════

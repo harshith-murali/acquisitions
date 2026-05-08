@@ -15,14 +15,16 @@
     "#validators/*": "./src/validators/*"
   },
   "scripts": {
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db-migrate": "drizzle-kit migrate",
     "db-generate": "drizzle-kit generate",
-    "db-studio": "drizzle-kit studio"
+    "db-studio": "drizzle-kit studio",
+    "dev:docker": "TERM=xterm bash ./src/scripts/dev.sh"
   },
   "repository": {
     "type": "git",
