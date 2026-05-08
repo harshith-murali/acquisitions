@@ -58,3 +58,7 @@
 {"level":"info","message":"::1 - - [08/May/2026:04:35:22 +0000] \"POST /api/auth/sign-up HTTP/1.1\" 201 145 \"-\" \"PostmanRuntime/7.29.0\"","service":"acquisitions-api","timestamp":"2026-05-08T04:35:22.719Z"}
 {"level":"info","message":"User signed in successfully: arjun.sharma@example.com","service":"acquisitions-api","timestamp":"2026-05-08T04:36:05.547Z"}
 {"level":"info","message":"::1 - - [08/May/2026:04:36:05 +0000] \"POST /api/auth/sign-in HTTP/1.1\" 200 144 \"-\" \"PostmanRuntime/7.29.0\"","service":"acquisitions-api","timestamp":"2026-05-08T04:36:05.548Z"}
+{"level":"warn","message":"Bot detected: ::1","service":"acquisitions-api","timestamp":"2026-05-08T05:39:28.956Z"}
+{"level":"info","message":"::1 - - [08/May/2026:05:39:28 +0000] \"GET /health HTTP/1.1\" 403 47 \"-\" \"PostmanRuntime/7.29.0\"","service":"acquisitions-api","timestamp":"2026-05-08T05:39:28.966Z"}
+{"level":"info","message":"Health check endpoint hit","service":"acquisitions-api","timestamp":"2026-05-08T05:40:27.786Z"}
+{"level":"info","message":"::1 - - [08/May/2026:05:40:27 +0000] \"GET /health HTTP/1.1\" 200 75 \"-\" \"PostmanRuntime/7.29.0\"","service":"acquisitions-api","timestamp":"2026-05-08T05:40:27.798Z"}

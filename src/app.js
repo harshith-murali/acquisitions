@@ -6,6 +6,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from '#routes/auth.routes.js';
 import { timestamp } from 'drizzle-orm/gel-core';
+import securityMiddleware from '#middlewares/security.middleware.js';
 const app = express();
 app.use(helmet()); // middleware for security headers
 app.use(express.json()); // middleware for parsing JSON bodies
@@ -17,6 +18,7 @@ app.use(
 ); // HTTP request logging
 app.use(cors()); // Enable CORS for all routes
 app.use(cookieParser()); // Middleware for parsing cookies
+app.use(securityMiddleware); // Custom security middleware
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
