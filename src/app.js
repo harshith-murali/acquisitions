@@ -1,11 +1,38 @@
 import express from 'express';
-
+import logger from '#configs/logger.js';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import authRoutes from '#routes/auth.routes.js';
+import { timestamp } from 'drizzle-orm/gel-core';
 const app = express();
-
+app.use(helmet()); // middleware for security headers
+app.use(express.json()); // middleware for parsing JSON bodies
+app.use(express.urlencoded({ extended: true })); // middleware for parsing URL-encoded bodies
+app.use(
+  morgan('combined', {
+    stream: { write: message => logger.info(message.trim()) },
+  })
+); // HTTP request logging
+app.use(cors()); // Enable CORS for all routes
+app.use(cookieParser()); // Middleware for parsing cookies
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
+  logger.info('Received request at /');
   res.status(200).send('Hello from Acquisitions Service');
 });
+
+app.get('/health', (req, res) => {
+  logger.info('Health check endpoint hit');
+  res.status(200).json({ status: 'ok' , timestamp: new Date().toISOString() , uptime: process.uptime() });
+});
+
+app.get("/api" , (req,res) => {
+    res.send("API is working");
+});
+
+app.use("/api/auth" , authRoutes); // Authentication routes
 
 export default app;

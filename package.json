@@ -3,6 +3,17 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
+  "imports": {
+    "#configs/*": "./src/configs/*",
+    "#db/*": "./src/db/*",
+    "#models/*": "./src/models/*",
+    "#routes/*": "./src/routes/*",
+    "#services/*": "./src/services/*",
+    "#utils/*": "./src/utils/*",
+    "#controllers/*": "./src/controllers/*",
+    "#middlewares/*": "./src/middlewares/*",
+    "#validators/*": "./src/validators/*"
+  },
   "scripts": {
     "dev": "nodemon src/index.js",
     "lint": "eslint .",
@@ -12,7 +23,6 @@
     "db-migrate": "drizzle-kit migrate",
     "db-generate": "drizzle-kit generate",
     "db-studio": "drizzle-kit studio"
-    
   },
   "repository": {
     "type": "git",
@@ -28,10 +38,18 @@
   "description": "",
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
-    "nodemon": "^3.1.14"
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
+    "nodemon": "^3.1.14",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
